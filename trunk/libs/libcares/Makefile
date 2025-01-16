@@ -1,11 +1,11 @@
 include $(ROOTDIR)/rules.mk
 
 PKG_NAME:=c-ares
-PKG_VERSION:=1.34.2
+PKG_VERSION:=1.34.4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/c-ares/c-ares/releases/download/v$(PKG_VERSION)
-PKG_HASH:=35410aa625cc9ee95b66475f54aea7c81c673fb63d75fad5eee267711503b72a
+PKG_HASH:=fa38dbed659ee4cc5a32df5e27deda575fa6852c79a72ba1af85de35a6ae222f
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
