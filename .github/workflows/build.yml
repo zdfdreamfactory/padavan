@@ -20,12 +20,15 @@ jobs:
           key: ${{ matrix.target }}-${{ matrix.toolchain }}
       - uses: actions/setup-go@main
         with:
-          go-version: '1.23.0'
+          go-version: '1.23.5'
           check-latest: true
           cache: false
       - name: Prepare environment
         run: |
-          sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache
+          sudo apt-get update && sudo apt-get install -y unzip libtool-bin ccache curl cmake gperf gawk flex bison nano xxd \
+            fakeroot kmod cpio bc zip git python3-docutils gettext automake autopoint \
+            texinfo build-essential help2man pkg-config zlib1g-dev libgmp3-dev \
+            libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin liblzma-dev
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
       - name: Start build firmware
@@ -37,7 +40,7 @@ jobs:
           path: trunk/images/*.trx
       - uses: ncipollo/release-action@main
         with:
-          commit: ${{ github.sha }}
+          commit: main
           tag: ${{ env.Compilation_time }}
           artifacts: trunk/images/*.trx
           allowUpdates: true
