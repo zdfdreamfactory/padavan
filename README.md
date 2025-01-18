@@ -85,6 +85,7 @@ This project is based on original rt-n56u with latest mtk 4.4.198 kernel, which 
 - SIM-AX1800T (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
 - TX1801 Plus (from https://github.com/MNM28/padavan-4.4, 没有机器测试，自行判断)
 - WDR8620 (from https://github.com/fzn0268/padavan-4.4, 没有机器测试，自行判断)
+- WRL18M4GD (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
 - WE410443-TC (from https://github.com/akw28888/padavan-4.4, 没有机器测试，自行判断)
 - WIA3300-10 (from https://github.com/vb1980/padavan-4.4, 西加云杉WIA3300-10，自测可用)
 - WR1200JS
