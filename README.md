@@ -65,6 +65,7 @@ This project is based on original rt-n56u with latest mtk 4.4.198 kernel, which 
 - JCG-Y2
 - K2P
 - K2P-USB
+- KOMI-A8 (from https://github.com/vb1980/padavan-4.4, 没有机器测试，自行判断)
 - MI-4
 - MI-R3G
 - MI-R3P
