@@ -65,6 +65,7 @@ on:
         - XY-C1
         - ZTE-E8820S
         - ZTE-E8820V2
+        - ZTT-RX6000
         default: K2P
       toolchain:
         description: 'Select the compilation toolchain'

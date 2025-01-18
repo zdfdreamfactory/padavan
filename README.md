@@ -92,6 +92,7 @@ This project is based on original rt-n56u with latest mtk 4.4.198 kernel, which 
 - XY-C1
 - ZTE-E8820S
 - ZTE-E8820V2
+- ZTT-RX6000(from https://github.com/vb1980/padavan-4.4，中天科技RX6000的Wifi6运营商机器，ttl刷机简单，使用R3G分区，r3g breed刷入，自测可用)
 # Compilation steps
 
 - Install dependencies
