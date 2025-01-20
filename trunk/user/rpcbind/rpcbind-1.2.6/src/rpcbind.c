@@ -42,11 +42,10 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/errno.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <sys/file.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -106,7 +105,7 @@ char *nss_modules = "files";
 /* who to suid to if -s is given */
 #define RUN_AS  "daemon"
 
-#define RPCBINDDLOCK "/var/run/rpcbind.pid"
+#define RPCBINDDLOCK "/var/run/rpcbind.lock"
 
 int runasdaemon = 0;
 int insecure = 0;
@@ -340,7 +339,7 @@ init_transport(struct netconfig *nconf)
 {
 	int fd = -1;
 	struct t_bind taddr;
-	struct addrinfo hints, *res;
+	struct addrinfo hints, *res = NULL;
 	struct __rpc_sockinfo si;
 	SVCXPRT	*my_xprt = NULL;
 	int status;	/* bound checking ? */
@@ -506,7 +505,7 @@ init_transport(struct netconfig *nconf)
 					hints.ai_flags |= AI_NUMERICHOST;
 				} else {
 					/*
-					 * Skip if we have an AF_INET6 adress.
+					 * Skip if we have an AF_INET6 address.
 					 */
 					if (inet_pton(AF_INET6,
 					    hosts[nhostsbak], host_addr) == 1)
@@ -519,7 +518,7 @@ init_transport(struct netconfig *nconf)
 					hints.ai_flags |= AI_NUMERICHOST;
 				} else {
 					/*
-					 * Skip if we have an AF_INET adress.
+					 * Skip if we have an AF_INET address.
 					 */
 					if (inet_pton(AF_INET, hosts[nhostsbak],
 					    host_addr) == 1)
@@ -794,12 +793,14 @@ got_socket:
 		}
 	}
 #endif
+
+
+#ifdef RMTCALLS
 	/*
 	 * rmtcall only supported on CLTS transports for now.
 	 */
 	if (nconf->nc_semantics == NC_TPI_CLTS) {
 		status = create_rmtcall_fd(nconf);
-
 #ifdef RPCBIND_DEBUG
 		if (debugging) {
 			if (status < 0) {
@@ -813,8 +814,14 @@ got_socket:
 		}
 #endif
 	}
+#endif
+
+	if (res != NULL)
+		freeaddrinfo(res);
 	return (0);
 error:
+	if (res != NULL)
+		freeaddrinfo(res);
 	close(fd);
 	return (1);
 }

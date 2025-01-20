@@ -693,11 +693,11 @@ reply_proc (res, who, nconf)
     }
   if (!(uaddr = taddr2uaddr (nconf, who)))
     {
-      uaddr = UNKNOWN;
+      printf ("%s\t%s\n", UNKNOWN, hostname);
+    } else {
+      printf ("%s\t%s\n", uaddr, hostname);
+      free ((char *) uaddr);
     }
-  printf ("%s\t%s\n", uaddr, hostname);
-  if (strcmp (uaddr, UNKNOWN))
-    free ((char *) uaddr);
   return (FALSE);
 }
 
@@ -973,6 +973,7 @@ rpcbdump (dumptype, netid, argc, argv)
 	("   program version(s) netid(s)                         service     owner\n");
       for (rs = rs_head; rs; rs = rs->next)
 	{
+	  size_t netidmax = sizeof(buf) - 1;
 	  char *p = buf;
 
 	  printf ("%10ld  ", rs->prog);
@@ -985,12 +986,22 @@ rpcbdump (dumptype, netid, argc, argv)
 	    }
 	  printf ("%-10s", buf);
 	  buf[0] = '\0';
-	  for (nl = rs->nlist; nl; nl = nl->next)
-	    {
-	      strcat (buf, nl->netid);
-	      if (nl->next)
-		strcat (buf, ",");
-	    }
+
+          for (nl = rs->nlist; nl; nl = nl->next)
+            {
+              strncat (buf, nl->netid, netidmax);
+              if (strlen (nl->netid) < netidmax)
+                netidmax -= strlen(nl->netid);
+              else
+                break;
+
+              if (nl->next && netidmax > 1)
+                {
+                  strncat (buf, ",", netidmax);
+                  netidmax --;
+                }
+            }
+
 	  printf ("%-32s", buf);
 	  rpc = getrpcbynumber (rs->prog);
 	  if (rpc)

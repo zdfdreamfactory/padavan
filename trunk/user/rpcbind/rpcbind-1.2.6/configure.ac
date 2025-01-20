@@ -1,7 +1,6 @@
-AC_INIT(rpcbind, 0.2.4)
+AC_INIT(rpcbind, 1.2.6)
  
 AM_INIT_AUTOMAKE
-AM_MAINTAINER_MODE([disable])
 AC_CONFIG_SRCDIR([src/rpcbind.c])
 AC_PREFIX_DEFAULT(/usr)
 AC_PROG_CC
@@ -22,9 +21,9 @@ AC_ARG_ENABLE([warmstarts],
   AS_HELP_STRING([--enable-warmstarts], [Enables Warm Starts @<:@default=no@:>@]))
 AM_CONDITIONAL(WARMSTART, test x$enable_warmstarts = xyes)
 
-AC_ARG_ENABLE([ipv6],
-  AS_HELP_STRING([--enable-ipv6], [Enables ipv6 support @<:@default=no@:>@]))
-AM_CONDITIONAL(IPV6, test x$enable_ipv6 = xyes)
+AC_ARG_ENABLE([rmtcalls],
+  AS_HELP_STRING([--enable-rmtcalls], [Enables Remote Calls @<:@default=no@:>@]))
+AM_CONDITIONAL(RMTCALLS, test x$enable_rmtcalls = xyes)
 
 AC_ARG_WITH([statedir],
   AS_HELP_STRING([--with-statedir=ARG], [use ARG as state dir @<:@default=/var/run/rpcbind@:>@])
@@ -64,7 +63,7 @@ AS_IF([test x$enable_libwrap = xyes], [
 
 AC_SEARCH_LIBS([pthread_create], [pthread])
 
-AC_CHECK_HEADERS([nss.h rpcsvc/mount.h])
+AC_CHECK_HEADERS([nss.h])
 
 # make sbindir available for substitution in config file
 # 2 "evals" needed to expand variable names

@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-DPORTMAP \
 	-DFACILITY=LOG_MAIL \
 	-DSEVERITY=LOG_INFO \
+	-DINET6 \
 	-DRPCBIND_STATEDIR="\"$(statedir)\"" \
 	-DRPCBIND_USER="\"$(rpcuser)\"" \
 	-DNSS_MODULES="\"$(nss_modules)\"" \
@@ -20,16 +21,16 @@ if LIBSETDEBUG
 AM_CPPFLAGS +=	-DLIB_SET_DEBUG
 endif
 
-if IPV6
-AM_CPPFLAGS += -DINET6
-endif
-
 if WARMSTART
 AM_CPPFLAGS +=	-DWARMSTART
 endif
 
 if LIBWRAP
 AM_CPPFLAGS +=	-DLIBWRAP
+endif
+
+if RMTCALLS
+AM_CPPFLAGS +=	-DRMTCALLS
 endif
 
 bin_PROGRAMS = rpcinfo
