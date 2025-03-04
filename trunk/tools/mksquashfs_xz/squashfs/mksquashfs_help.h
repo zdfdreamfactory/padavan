@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -54,6 +54,18 @@
 #else
 #define NOXOPT_STR " (default)"
 #define XOPT_STR " (unsupported)"
+#endif
+
+#ifdef SINGLE_READER_THREAD
+#define SINGLE_STR " (default)"
+#define SMALL_STR
+#define BLOCK_STR
+#else
+#define STRING(x) #x
+#define STRINGIFY(x) STRING(x)
+#define SINGLE_STR
+#define SMALL_STR  " (default " STRINGIFY(SMALL_READER_THREADS) ")"
+#define BLOCK_STR  " (default " STRINGIFY(BLOCK_READER_THREADS) ")"
 #endif
 
 #define TRUE 1

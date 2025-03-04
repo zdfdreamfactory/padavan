@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@
 #include "unsquashfs_error.h"
 #include "print_pager.h"
 #include "compressor.h"
+#include "alloc.h"
 
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract " \
 	"or exclude (with -excludes) or cat (with -cat )]\n\n"
@@ -39,41 +40,66 @@
 	"cat to stdout]\n\n"
 
 static char *unsquashfs_options[]={
+	/* extraction options */
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
 	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
 	"-missing-symlinks", "-no-wildcards", "-regex", "-all-time",
-	"-cat", "-force", "-pf", "", "", "", "-stat", "-max-depth",
-	"-info", "-linfo", "-ls", "-lls", "-llnumeric", "-lc", "-llc",
-	"-full-precision", "-UTC", "-mkfs-time", "", "", "", "-no-xattrs",
-	"-xattrs", "-xattrs-exclude", "-xattrs-include", "", "", "", "-version",
-	"-processors", "-mem", "-mem-percent", "-quiet", "-no-progress",
-	"-percentage", "-ignore-errors", "-strict-errors", "-no-exit-code",
-	"", "", "", "-help", "-help-option", "-help-section", "-help-all",
-	"-ho", "-hs", "-ha", "", "", "", "-offset", "-fstime", "-ef", "-excf",
-	"-L", "-pseudo-file", "", "", "", NULL,
+	"-cat", "-force", "-pf", "", "", "",
+	/* information options */
+	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
+	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
+	/* xattrs options */
+	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include", "", "",
+	"",
+	/* runtime options */
+	"-version", "-processors", "-mem", "-mem-percent", "-quiet",
+	"-no-progress", "-percentage", "-ignore-errors", "-strict-errors",
+	"-no-exit-code", "", "", "",
+	/* help options */
+	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
+	"-ha", "", "", "",
+	/* misc options */
+	"-offset", "-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "",
+	NULL,
 };
 
-static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
-	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
-	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
+static char *sqfscat_options[]={
+	/* runtime options */
+	"", "", "-version", "-processors", "-mem", "-mem-percent", "-offset",
+	"-ignore-errors", "-strict-errors", "-no-exit-code", "", "", "",
+	/* filter options */
+	"-no-wildcards", "-regex", "", "", "",
+	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
 	"-ha", NULL,
 };
 
 static char *unsquashfs_args[]={
+	/* extraction options */
 	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "",
-	"<time>", "", "", "<file>", "", "", "", "", "<levels>", "", "",
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "<regex>",
-	"<regex>", "", "", "", "", "<number>", "<size>", "<percent>",
-	"", "", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
-	"<regex>", "<section>", "", "", "", "", "<bytes>", "", "<extract file>",
-	"<exclude file>", "", "<file>", "", "", "",
+	"<time>", "", "", "<file>", "", "", "",
+	/* information options */
+	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	/* xattrs options */
+	"", "", "<regex>", "<regex>", "", "", "",
+	/* runtime options */
+	"", "<number>", "<size>", "<percent>", "", "", "", "", "", "", "", "",
+	"",
+	/* help options */
+	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "", "", "",
+	/* misc options */
+	"<bytes>", "", "<extract file>", "<exclude file>", "", "<file>", "",
+	"", "",
 };
 
 static char *sqfscat_args[]={
+	/* runtime options */
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
-	"<regex>", "<section>", ""
+	"", "", "",
+	/* filter options */
+	"", "", "", "", "",
+	/* help options */
+	"", "<regex>", "<section>", "", "<regex>", "<section>", ""
 };
 
 static char *unsquashfs_sections[]={
@@ -200,9 +226,9 @@ static char *unsquashfs_text[]={
 	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
 		"file sqfs_cmdline which contains the command line arguments "
 		"given to Unsquashfs.  Each command line argument is wrapped "
-	       "in quotes to ensure there is no ambiguity when arguments "
-	       "contain spaces.  If the file already exists the command "
-	       "line is appended to the file\n", "\n",
+		"in quotes to ensure there is no ambiguity when arguments "
+		"contain spaces.  If the file already exists then the command "
+		"line is appended to the file\n", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
@@ -264,9 +290,9 @@ static char *sqfscat_text[]={
 	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
 		"file sqfs_cmdline which contains the command line arguments "
 		"given to Sqfscat.  Each command line argument is wrapped "
-	       "in quotes to ensure there is no ambiguity when arguments "
-	       "contain spaces.  If the file already exists the command "
-	       "line is appended to the file\n", "\n",
+		"in quotes to ensure there is no ambiguity when arguments "
+		"contain spaces.  If the file already exists then the command "
+		"line is appended to the file\n", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
@@ -324,11 +350,8 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 					char **options_args, char **options_text)
 {
 	int i, res, matched = FALSE;
-	regex_t *preg = malloc(sizeof(regex_t));
+	regex_t *preg = MALLOC(sizeof(regex_t));
 	int cols = get_column_width();
-
-	if(preg == NULL)
-		MEM_ERROR();
 
 	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
 
