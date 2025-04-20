@@ -202,12 +202,14 @@ static char *unsquashfs_text[]={
 		"errors\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
-	"\t-help-option <regex>\tprint the help information for Unsquashfs "
-		"options matching <regex> to stdout\n",
+	"\t-help-option <regex>\tprint the help information for options "
+		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"\t-help-all\t\tprint help information for all Unsquashfs options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
@@ -275,12 +277,14 @@ static char *sqfscat_text[]={
 		"than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
-	"\t-help-option <regex>\tprint the help information for Sqfscat "
-		"options matching <regex> to stdout\n",
+	"\t-help-option <regex>\tprint the help information for options "
+		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"\t-help-all\t\tprint help information for all Sqfscat options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
@@ -317,16 +321,13 @@ static char *sqfscat_text[]={
 
 static void print_help_all(char *name, char *syntax, char **options_text)
 {
-	int i, cols, tty = isatty(STDOUT_FILENO);
+	int i, cols;
 	pid_t pager_pid;
 	FILE *pager;
 
-	if(tty) {
+	if(isatty(STDOUT_FILENO)) {
 		cols = get_column_width();
-
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
 	} else {
 		cols = 80;
 		pager = stdout;
@@ -337,7 +338,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
 
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
@@ -352,6 +353,8 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 	int i, res, matched = FALSE;
 	regex_t *preg = MALLOC(sizeof(regex_t));
 	int cols = get_column_width();
+	pid_t pager_pid;
+	FILE *pager;
 
 	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
 
@@ -363,14 +366,26 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		exit(1);
 	}
 
+	if(isatty(STDOUT_FILENO))
+		pager = exec_pager(&pager_pid);
+	else {
+		cols = 80;
+		pager = stdout;
+	}
+
 	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
 		if(res)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, options_text[i], cols);
+			autowrap_print(pager, options_text[i], cols);
 		}
+	}
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
 	}
 
 	if(!matched) {
@@ -405,16 +420,14 @@ static void print_section_names(FILE *out, char *string, int cols, char **sectio
 
 static void print_section(char *prog_name, char *opt_name, char *sec_name, char **sections, char **options_text)
 {
-	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
+	int i, j, secs, cols, res, matched = FALSE;
 	pid_t pager_pid;
 	FILE *pager;
+	regex_t *preg;
 
-	if(tty) {
+	if(isatty(STDOUT_FILENO)) {
 		cols = get_column_width();
-
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
 	} else {
 		cols = 80;
 		pager = stdout;
@@ -428,14 +441,44 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 
 	for(i = 0; sections[i] != NULL; i++)
 		if(strcmp(sections[i], sec_name) == 0)
-			break;
+			goto exact_match;
 
-	if(sections[i] == NULL) {
-		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(pager, "", cols, sections, options_text);
-		goto finish;
+	/* match sec_name as a regex */
+	preg = MALLOC(sizeof(regex_t));
+	res = regcomp(preg, sec_name, REG_EXTENDED|REG_NOSUB);
+	if(res) {
+		char str[1024]; /* overflow safe */
+
+		if(pager != stdout) {
+			fclose(pager);
+			wait_to_die(pager_pid);
+		}
+
+		regerror(res, preg, str, 1024);
+		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, sec_name, str);
+		exit(1);
 	}
 
+	for(i = j = 0; sections[i] != NULL; i++) {
+		res = regexec(preg, sections[i], (size_t) 0, NULL, 0);
+		if(!res) {
+			autowrap_print(pager, options_text[j], cols);
+			matched = TRUE;
+		}
+
+		while(options_text[++ j] != NULL && !is_header(j, options_text))
+			if(!res)
+				autowrap_print(pager, options_text[j], cols);
+	}
+
+	if(!matched) {
+		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		print_section_names(pager, "", cols, sections, options_text);
+	}
+
+	goto finish;
+
+exact_match:
 	i++;
 
 	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
@@ -446,7 +489,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 	}
 
 finish:
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
@@ -457,40 +500,93 @@ finish:
 
 static void handle_invalid_option(char *prog_name, char *opt_name, char **sections, char **options_text)
 {
-	int cols = get_column_width();
+	int cols;
+	pid_t pager_pid;
+	FILE *pager;
 
-	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	autowrap_printf(stderr, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stderr, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
+		pager = exec_pager(&pager_pid);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	autowrap_printf(pager, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
+	autowrap_printf(pager, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(pager, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
 	exit(1);
 }
 
 
-static void print_help(char *prog_name, int error, char *syntax, char **sections, char **options_text)
+static void print_help(char *prog_name, char*message, char *syntax, char **sections, char **options_text)
 {
-	FILE *stream = error ? stderr : stdout;
-	int cols = get_column_width();
+	int cols;
+	pid_t pager_pid;
+	FILE *pager;
 
-	autowrap_printf(stream, cols, syntax, prog_name);
-	autowrap_printf(stream, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stream, "\t", cols, sections, options_text);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
-	exit(error);
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
+		pager = exec_pager(&pager_pid);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	if(message)
+		autowrap_print(pager, message, cols);
+	autowrap_printf(pager, cols, syntax, prog_name);
+	autowrap_printf(pager, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
+	exit(message == NULL ? 0 : 1);
 }
 
 
-static void print_option_help(char *prog_name, char *option, char **sections, char **options_text)
+static void print_option_help(char *prog_name, char *option, char **sections, char **options_text, const char *restrict fmt, va_list ap)
 {
-	int cols = get_column_width();
+	int cols;
+	char *string;
+	pid_t pager_pid;
+	FILE *pager;
 
-	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
+		pager = exec_pager(&pager_pid);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	VASPRINTF(&string, fmt, ap);
+	autowrap_print(pager, string, cols);
+	autowrap_printf(pager, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	free(string);
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
 	exit(1);
 }
 
@@ -513,9 +609,9 @@ void unsquashfs_option(char *opt_name, char *pattern)
 }
 
 
-void unsquashfs_help(int error)
+void unsquashfs_help(char *message)
 {
-	print_help("unsquashfs", error, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
+	print_help("unsquashfs", message, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
 
 
@@ -525,9 +621,13 @@ void unsquashfs_invalid_option(char *opt_name)
 }
 
 
-void unsquashfs_option_help(char *option)
+void unsquashfs_option_help(char *option, const char *restrict fmt, ...)
 {
-	print_option_help("unsquashfs", option, unsquashfs_sections, unsquashfs_text);
+	va_list ap;
+
+	va_start(ap, fmt);
+	print_option_help("unsquashfs", option, unsquashfs_sections, unsquashfs_text, fmt, ap);
+	va_end(ap);
 }
 
 
@@ -549,9 +649,9 @@ void sqfscat_option(char *opt_name, char *pattern)
 }
 
 
-void sqfscat_help(int error)
+void sqfscat_help(char *message)
 {
-	print_help("sqfscat", error, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
+	print_help("sqfscat", message, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
 }
 
 
@@ -561,9 +661,13 @@ void sqfscat_invalid_option(char *opt_name)
 }
 
 
-void sqfscat_option_help(char *option)
+void sqfscat_option_help(char *option, const char *restrict fmt, ...)
 {
-	print_option_help("sqfscat", option, sqfscat_sections, sqfscat_text);
+	va_list ap;
+
+	va_start(ap, fmt);
+	print_option_help("sqfscat", option, sqfscat_sections, sqfscat_text,  fmt, ap);
+	va_end(ap);
 }
 
 
