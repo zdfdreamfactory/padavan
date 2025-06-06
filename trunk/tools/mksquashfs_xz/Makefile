@@ -1,24 +1,34 @@
-SRC_NAME=squashfs
-#SRC_URL=https://github.com/plougher/squashfs-tools/archive/refs/tags/4.6.1.tar.gz
+include $(ROOTDIR)/rules.mk
 
-#all: download_test extract_test
-all: 
-	make -j$(HOST_NCPU) -C $(SRC_NAME) ; \
-	cp $(SRC_NAME)/mksquashfs ./
-	cp $(SRC_NAME)/unsquashfs ./
+PKG_NAME := squashfs
+PKG_VERSION := 4.7
+PKG_SOURCE := squashfs-tools-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL := https://github.com/plougher/squashfs-tools/archive/refs/tags/$(PKG_VERSION)
+PKG_HASH := f1605ef720aa0b23939a49ef4491f6e734333ccc4bda4324d330da647e105328
+PKG_BUILD_DIR := $(BUILD_DIR)/squashfs-tools-$(PKG_VERSION)
 
-download_test:
-	( if [ ! -f $(SRC_NAME).tar.gz ]; then \
-		wget -t5 --timeout=20 --no-check-certificate -O $(SRC_NAME).tar.gz $(SRC_URL); \
-	fi )
+include $(INCLUDE_DIR)/package.mk
 
-extract_test:
-	( if [ ! -d $(SRC_NAME) ]; then \
-		tar zxf $(SRC_NAME).tar.gz; \
-	fi )
+CONFIGURE_ARGS += \
+	--with-zlib \
+	--with-lzo \
+	--with-lz4 \
+	--with-xz \
+	--with-zstd \
+	--enable-xattr
 
-clean:
-	if [ -f $(SRC_NAME)/Makefile ]; then \
-		make -C $(SRC_NAME) clean; \
-	fi
-	rm -f mksquashfs unsquashfs
+define Build/Compile
+	@echo "==> Patching default compression method to xz..."
+	@$(SED) 's|COMP_DEFAULT = gzip|COMP_DEFAULT = xz|g; s|COMP_DEFAULT ?= gzip|COMP_DEFAULT ?= xz|g' \
+		$(PKG_BUILD_DIR)/squashfs-tools/Makefile
+
+	@echo "==> Compiling $(PKG_NAME)..."
+	+$(MAKE) -C $(PKG_BUILD_DIR)/squashfs-tools
+
+	@echo "==> Installing $(PKG_NAME) to tools/mksquashfs_xz..."
+	$(INSTALL_DIR) $(ROOTDIR)/tools/mksquashfs_xz
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/squashfs-tools/mksquashfs $(ROOTDIR)/tools/mksquashfs_xz/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/squashfs-tools/unsquashfs $(ROOTDIR)/tools/mksquashfs_xz/
+endef
+
+$(eval $(call BuildPackage,squashfs))
