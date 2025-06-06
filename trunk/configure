@@ -1,7 +1,7 @@
 #!/bin/bash
 
-ROOTDIR=`pwd`
-export ROOTDIR=$ROOTDIR
+# Set root directory and export it
+export ROOTDIR="$(pwd)"
 
 kernel_id="4.4.x"
 kernel_cf=""
@@ -109,6 +109,7 @@ cp -fL "$kernel_cf" "$kernel_tf"
 cp -fL "$busybox_cf" "$busybox_tf"
 cp -fL "$board_mk" "$ROOTDIR/user/board.mk"
 cp -fL "$board_h" "$ROOTDIR/user/shared/src/include/ralink_board.h"
+
 ############################# SMP #####################################
 if [ -n "$CONFIG_SMP" ] ; then
 	func_enable_busybox_param "CONFIG_FEATURE_TOP_SMP_CPU"
@@ -118,7 +119,7 @@ fi
 if [ -n "$CONFIG_RTC_CLASS" ] ; then
 	func_enable_busybox_param "CONFIG_HWCLOCK"
 fi
-# SFE
+############################# SFE #####################################
 if [ "$CONFIG_FIRMWARE_INCLUDE_SFE" = "y" ] ; then
 	func_enable_kernel_param "CONFIG_SHORTCUT_FE"
 fi
@@ -128,7 +129,7 @@ if [ "$CONFIG_FIRMWARE_INCLUDE_WIREGUARD" = "y" ]; then
 else
 	func_disable_kernel_param "CONFIG_WIREGUARD"
 fi
-# SQM QOS
+############################# SQM #####################################
 if [ "$CONFIG_FIRMWARE_INCLUDE_SQM" = "y" ]; then
 	func_enable_kernel_param "CONFIG_NF_CONNTRACK_EVENTS"
 	sed -i "/CONFIG_NF_CONNTRACK_EVENTS=y/a\CONFIG_NF_CONNTRACK_CHAIN_EVENTS=y" $kernel_tf
@@ -139,7 +140,7 @@ if [ "$CONFIG_FIRMWARE_INCLUDE_SQM" = "y" ]; then
 	func_enable_kernel_param "CONFIG_NET_ACT_IPT" "m"
 	func_enable_kernel_param "CONFIG_IFB"
 fi
-# CPUFREQ
+########################### CPU EREQ ###################################
 if [ "$CONFIG_FIRMWARE_INCLUDE_OC" = "y" ]; then	
 	sed -i "/CONFIG_RALINK_MT7621=y/a\CONFIG_MT7621_OC=y" $kernel_tf
 	sed -i '/CONFIG_MT7621_OC=y/a\CONFIG_MT7621_CPU_FREQ="'$CONFIG_FIRMWARE_MT7621_OC'"' $kernel_tf
@@ -299,8 +300,7 @@ fi
 #if [ "$CONFIG_FIRMWARE_INCLUDE_SMBD" != "y" ] ; then
 #        func_disable_kernel_param "CONFIG_NETFILTER_FP_SMB"
 #fi
-if [ "$CONFIG_FIRMWARE_INCLUDE_NFSD" != "y" -a "$CONFIG_FIRMWARE_INCLUDE_NFSC" != "y" -a "$CONFIG_FIRMWARE_I
-NCLUDE_CIFS" != "y" ] ; then
+if [ "$CONFIG_FIRMWARE_INCLUDE_NFSD" != "y" -a "$CONFIG_FIRMWARE_INCLUDE_NFSC" != "y" -a "$CONFIG_FIRMWARE_INCLUDE_CIFS" != "y" ] ; then
         func_disable_kernel_param "CONFIG_NETWORK_FILESYSTEMS"
         if [ "$CONFIG_FIRMWARE_ENABLE_USB" != "y" ] || [ -z "$CONFIG_USB_SUPPORT" ] ; then
                 func_disable_kernel_param "CONFIG_NLS"
@@ -308,8 +308,7 @@ NCLUDE_CIFS" != "y" ] ; then
         fi
 fi
 ############################# USB AUDIO ###############################
-if [ "$CONFIG_FIRMWARE_INCLUDE_AUDIO" != "y" ] || [ "$CONFIG_FIRMWARE_ENABLE_USB" != "y" ] || [ -z "$CONFIG_
-USB_SUPPORT" ] ; then
+if [ "$CONFIG_FIRMWARE_INCLUDE_AUDIO" != "y" ] || [ "$CONFIG_FIRMWARE_ENABLE_USB" != "y" ] || [ -z "$CONFIG_USB_SUPPORT" ] ; then
         func_disable_kernel_param "CONFIG_FW_LOADER"
         func_disable_kernel_param "CONFIG_SOUND"
 fi

@@ -1,7 +1,6 @@
 lzma/lzma
-lzma/lzma2406/CPP/7zip/Bundles/LzmaCon/_o/lzma
 mkimage/mkimage
 mkimage/.depend
-squashfs/mksquashfs
-squashfs/unsquashfs
+mksquashfs_xz/mksquashfs
+mksquashfs_xz/unsquashfs
 sstrip/sstrip
