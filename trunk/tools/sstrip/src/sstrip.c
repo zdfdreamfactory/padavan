@@ -11,7 +11,7 @@
 #include <getopt.h>
 #include <elf.h>
 
-#include "elfrw.h"
+#include "elfrw/elfrw.h"
 
 #ifndef TRUE
 #define	TRUE	1
