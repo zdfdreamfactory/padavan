@@ -59,7 +59,7 @@ typedef		unsigned int	uint32_t;
 #define O_BINARY	0
 #endif
 
-#include <image.h>
+#include "image.h"
 
 extern int errno;
 
@@ -637,7 +637,7 @@ print_header (image_header_t *hdr)
 {
 	time_t timestamp;
 	uint32_t size;
-	int i;
+//	int i;
 
 	timestamp = (time_t)ntohl(hdr->ih_time);
 	size = ntohl(hdr->ih_size);
