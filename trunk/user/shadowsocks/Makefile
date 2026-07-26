@@ -76,7 +76,7 @@ configure_ssr:
 #   2. No CMAKE_PREFIX_PATH or CMAKE_FIND_ROOT_PATH on CLI — let toolchain file handle via env vars
 #   3. Explicitly set cross compiler paths to bypass any root-path mapping issues
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
-	do_configure_ss:
+do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
