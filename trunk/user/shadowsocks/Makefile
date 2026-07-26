@@ -78,13 +78,9 @@ configure_ssr:
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	rm -rf $(BUILD_SS_DIR) ; \
-	mkdir -p $(BUILD_SS_DIR) ; \
-	cd $(BUILD_SS_DIR) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
-	cmake -G "Unix Makefiles" \
-		-S "$$(cd .. && pwd)" \
-		-B . \
+	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
+	cmake -G "Unix Makefiles" . \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
@@ -111,7 +107,6 @@ do_configure_ss:
 		exit 1; \
 	fi; \
 	)
-
 clean: clean_ssr clean_ss
 	rm -f ssr_config_done ss_config_done
 
