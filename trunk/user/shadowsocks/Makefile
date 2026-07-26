@@ -30,7 +30,7 @@ extract_ss_test:
 	( if [ ! -d $(SRC_SS_NAME) ]; then \
 		if [ ! -f $(SRC_SS_NAME).tar.gz ]; then \
 			echo "Downloading shadowsocks-libev-3.3.5 source..."; \
-			curl -sL --connect-timeout 30 -O https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.6/shadowsocks-libev-3.3.5.tar.gz || true; \
+			curl -sL --connect-timeout 30 -O https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.5/shadowsocks-libev-3.3.5.tar.gz || true; \
 		fi; \
 		tar xzf $(SRC_SS_NAME).tar.gz ; \
 	fi )
