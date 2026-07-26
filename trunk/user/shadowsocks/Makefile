@@ -78,7 +78,11 @@ configure_ssr:
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	echo "Configuring shadowsocks-libev with CMake..."; \
+	echo "Patching CMakeLists.txt to make deps optional..."; \
+	sed -i "s/find_package(PCRE2 REQUIRED)/find_package(PCRE2)/" CMakeLists.txt; \
+	sed -i "s/find_package(MbedTLS REQUIRED)/find_package(MbedTLS)/" CMakeLists.txt; \
+	sed -i "s/find_package(Sodium REQUIRED)/find_package(Sodium)/" CMakeLists.txt; \
+	sed -i "s/find_package(Cares REQUIRED)/find_package(Cares)/" CMakeLists.txt; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
 	cmake -G "Unix Makefiles" . \
 		-DCMAKE_SYSTEM_NAME=Linux \
@@ -91,10 +95,10 @@ do_configure_ss:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_SKIP_RPATH=TRUE \
-		-DCMAKE_PREFIX_PATH=$(STAGEDIR) \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
 		-DWITH_EVPORT=OFF \
+		-DEMBEDDED_SRC=ON \
 		-DENABLE_NAT=ON \
 		-DENABLE_MANPAGE=OFF \
 		-DBUILD_TESTING=OFF \
@@ -107,6 +111,7 @@ do_configure_ss:
 		exit 1; \
 	fi; \
 	)
+
 
 
 clean: clean_ssr clean_ss
