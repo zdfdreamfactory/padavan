@@ -28,7 +28,11 @@ extract_ssr_test:
 
 extract_ss_test:
 	( if [ ! -d $(SRC_SS_NAME) ]; then \
-		tar xf $(SRC_SS_NAME).tar.gz ; \
+		if [ ! -f $(SRC_SS_NAME).tar.gz ]; then \
+			echo "Downloading shadowsocks-libev-3.3.6 source..."; \
+			curl -sL --connect-timeout 30 -O https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.6/shadowsocks-libev-3.3.6.tar.gz || true; \
+		fi; \
+		tar xzf $(SRC_SS_NAME).tar.gz ; \
 	fi )
 
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
@@ -67,18 +71,19 @@ configure_ssr:
 	)
 
 # Shadowsocks-libev 3.3.6 uses CMake (not autotools)
-# Critical fix: -DWITH_EMBEDDED_SRC=OFF to prevent cross-compilation failures
-# The embedded sources try to build host tools which fail in cross-compile env
+# Critical fixes:
+# 1. Use cmake -S to explicitly specify source directory (bypasses FIND_ROOT_PATH mapping issues)
+# 2. WITH_EMBEDDED_SRC=OFF to prevent cross-compilation failures from embedded deps
+# 3. Clean build directory first to avoid stale CMakeCache.txt from wrong path
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	echo "Configuring shadowsocks-libev-3.3.6 with CMake..."; \
+	rm -rf $(BUILD_SS_DIR) ; \
 	mkdir -p $(BUILD_SS_DIR) ; \
 	cd $(BUILD_SS_DIR) ; \
-	cmake .. \
-		-DCMAKE_SYSTEM_NAME=Linux \
-		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
-		-DCMAKE_BUILD_TYPE=Release \
+	echo "Configuring shadowsocks-libev with CMake..."; \
+	cmake -S $(CURDIR) \
 		-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_PREFIX_PATH=$(STAGEDIR) \
 		-DCMAKE_FIND_ROOT_PATH=$(STAGEDIR) \
@@ -93,7 +98,7 @@ do_configure_ss:
 		-DWITH_USR=OFF \
 		2>&1 | tee ../config.log; \
 	if [ ! -f CMakeCache.txt ]; then \
-		echo "ERROR: CMake configuration failed"; \
+		echo "ERROR: CMake configuration failed!"; \
 		echo "=== Last 50 lines of config log ==="; \
 		tail -50 ../config.log; \
 		exit 1; \
@@ -109,8 +114,8 @@ clean_ssr:
 	fi )
 
 clean_ss:
-	( if [ -d $(BUILD_SS_DIR) ]; then \
-		rm -rf $(BUILD_SS_DIR) ; \
+	( if [ -d $(SRC_SS_NAME) ]; then \
+		rm -rf $(SRC_SS_NAME)/$(BUILD_SS_DIR) ; \
 	fi )
 	
 romfs:
@@ -131,10 +136,10 @@ ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SSR_NAME)/src/ss-redir /usr/bin/ssr-redir
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SSR_NAME)/src/ss-local /usr/bin/ssr-local
 	# CMake builds into build/ dir, not in-source
-	$(ROMFSINST) -p +x $(THISDIR)/$(BUILD_SS_DIR)/src/ss-redir /usr/bin/ss-redir
-	$(ROMFSINST) -p +x $(THISDIR)/$(BUILD_SS_DIR)/src/ss-local /usr/bin/ss-local
+	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/$(BUILD_SS_DIR)/src/ss-redir /usr/bin/ss-redir
+	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/$(BUILD_SS_DIR)/src/ss-local /usr/bin/ss-local
 endif
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SSSERVER),y)
-	$(ROMFSINST) -p +x $(THISDIR)/$(BUILD_SS_DIR)/src/ss-server /usr/bin/ss-server
+	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/$(BUILD_SS_DIR)/src/ss-server /usr/bin/ss-server
 endif
 
