@@ -68,8 +68,15 @@ configure_ssr:
 
 configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	if [ -f configure.ac ] && [ ! -f configure ]; then \
-		aclocal -I m4; autoreconf -fi; automake -a --copy; \
+	if [ ! -f configure ]; then \
+		echo "Generating configure script..."; \
+		aclocal -I m4 2>/dev/null || true; \
+		autoreconf -fi 2>/dev/null || true; \
+	fi; \
+	if [ ! -f configure ]; then \
+		echo "ERROR: configure script generation failed. Checking for m4 files..."; \
+		ls -la m4/ 2>/dev/null || echo "m4 directory not found"; \
+		exit 1; \
 	fi; \
 	ac_cv_prog_PCRE_CONFIG="$(STAGEDIR)/bin/pcre-config" \
 	./configure \
