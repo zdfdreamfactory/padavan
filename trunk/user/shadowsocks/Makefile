@@ -70,7 +70,7 @@ configure_ssr:
 		--build=$(HOST_BUILD) ; \
 	)
 
-# Shadowsocks-libev 3.3.6 uses CMake (not autotools).
+# Shadowsocks-libev 3.3.5 uses autotools (configure/make).
 # Key changes from original:
 #   1. autotools ./configure -B build — build in-source-relative (from SRC_SS_NAME dir), explicit source=.
 #   2. No CMAKE_PREFIX_PATH or CMAKE_FIND_ROOT_PATH on CLI — let toolchain file handle via env vars
@@ -84,7 +84,6 @@ do_configure_ss:
 	./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
-		--target=mipsel-linux-musl \
 		--prefix=$(STAGEDIR) \
 		--with-mbedtls=$(STAGEDIR) \
 		--disable-documentation \
