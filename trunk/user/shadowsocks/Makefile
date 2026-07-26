@@ -4,7 +4,7 @@ SRC_SS_NAME=shadowsocks-libev-3.3.6
 SRC_SSR_NAME=shadowsocksr-libev-master
 ARCHIVE_SSR_NAME=shadowsocksr-libev-master-e2373d7
 
-# Build directories — CMake builds into a separate build/ dir
+# Build directories
 BUILD_SS_DIR=$(SRC_SS_NAME)/build
 BUILD_SSR_DIR=$(SRC_SSR_NAME)/build
 
@@ -70,23 +70,28 @@ configure_ssr:
 		--build=$(HOST_BUILD) ; \
 	)
 
-# Shadowsocks-libev 3.3.6 uses CMake (not autotools)
-# Critical fixes:
-# 1. Use cmake -S to explicitly specify source directory (bypasses FIND_ROOT_PATH mapping issues)
-# 2. WITH_EMBEDDED_SRC=OFF to prevent cross-compilation failures from embedded deps
-# 3. Clean build directory first to avoid stale CMakeCache.txt from wrong path
+# Shadowsocks-libev 3.3.6 uses CMake (not autotools).
+# Key changes from original:
+#   1. cmake -S . -B build — build in-source-relative (from SRC_SS_NAME dir), explicit source=.
+#   2. No CMAKE_PREFIX_PATH or CMAKE_FIND_ROOT_PATH on CLI — let toolchain file handle via env vars
+#   3. Explicitly set cross compiler paths to bypass any root-path mapping issues
+#   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
 	rm -rf $(BUILD_SS_DIR) ; \
 	mkdir -p $(BUILD_SS_DIR) ; \
 	cd $(BUILD_SS_DIR) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
-	cmake -S $(CURDIR) \
-		-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+	cmake -S .. \
+		-DCMAKE_SYSTEM_NAME=Linux \
+		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
+		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
+		-DCMAKE_CXX_COMPILER=$(CROSS_COMPILE)g++ \
+		-DCMAKE_AR=$(CROSS_COMPILE)ar \
+		-DCMAKE_NM=$(CROSS_COMPILE)nm \
+		-DCMAKE_RANLIB=$(CROSS_COMPILE)ranlib \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_PREFIX_PATH=$(STAGEDIR) \
-		-DCMAKE_FIND_ROOT_PATH=$(STAGEDIR) \
 		-DCMAKE_SKIP_RPATH=TRUE \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
@@ -135,7 +140,6 @@ ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
 	$(ROMFSINST) $(THISDIR)/ss/ /etc_ro/ss/
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SSR_NAME)/src/ss-redir /usr/bin/ssr-redir
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SSR_NAME)/src/ss-local /usr/bin/ssr-local
-	# CMake builds into build/ dir, not in-source
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/$(BUILD_SS_DIR)/src/ss-redir /usr/bin/ss-redir
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/$(BUILD_SS_DIR)/src/ss-local /usr/bin/ss-local
 endif
