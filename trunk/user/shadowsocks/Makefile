@@ -80,9 +80,36 @@ configure_ssr:
 	( cd $(SRC_SS_NAME) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	# Patch FindMbedTLS.cmake to add STAGEDIR to search hints
-	sed -i "s|HINTS|HINTS $(STAGEDIR)/lib $(STAGEDIR)/include|" cmake/FindMbedTLS.cmake; \
+	sed -i "s|        /usr/lib|        /usr/lib\n        $(STAGEDIR)/lib|" cmake/FindMbedTLS.cmake; \
+	sed -i "s|        /usr/include|        /usr/include\n        $(STAGEDIR)/include|" cmake/FindMbedTLS.cmake; \
 	cmake -G "Unix Makefiles" . \
+		-DCMAKE_SYSTEM_NAME=Linux \
+		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
+		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
+		-DCMAKE_CXX_COMPILER=$(CROSS_COMPILE)g++ \
+		-DCMAKE_AR=$(CROSS_COMPILE)ar \
+		-DCMAKE_NM=$(CROSS_COMPILE)nm \
+		-DCMAKE_RANLIB=$(CROSS_COMPILE)ranlib \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_SKIP_RPATH=TRUE \
+		-DWITH_MBEDTLS=ON \
+		-DWITH_SODIUM=OFF \
+		-DWITH_EVPORT=OFF \
+		-DWITH_EMBEDDED_SRC=OFF \
+		-DENABLE_NAT=ON \
+		-DENABLE_MANPAGE=OFF \
+		-DBUILD_TESTING=OFF \
+		-DWITH_USR=OFF \
+		2>&1 | tee ../config.log; \
+	if [ ! -f CMakeCache.txt ]; then \
+		echo "ERROR: CMake configuration failed!"; \
+		echo "=== Last 50 lines of config log ==="; \
+		tail -50 ../config.log; \
+		exit 1; \
+	fi; \
+	)
+
 
 clean: clean_ssr clean_ss
 	rm -f ssr_config_done ss_config_done
