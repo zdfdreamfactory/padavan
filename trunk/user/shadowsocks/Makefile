@@ -82,7 +82,9 @@ do_configure_ss:
 	mkdir -p $(BUILD_SS_DIR) ; \
 	cd $(BUILD_SS_DIR) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
-	cmake -S .. \
+cmake -G "Unix Makefiles" \\
+		-S "$$(cd .. && pwd)" \
+		-B . \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
