@@ -1,9 +1,12 @@
 THISDIR = $(shell pwd)
 
 SRC_SS_NAME=shadowsocks-libev-3.3.6
+SRC_SSR_NAME=shadowsocksr-libev-master
+ARCHIVE_SSR_NAME=shadowsocksr-libev-master-e2373d7
 
 # Build directories — CMake builds into a separate build/ dir
 BUILD_SS_DIR=$(SRC_SS_NAME)/build
+BUILD_SSR_DIR=$(SRC_SSR_NAME)/build
 
 all: extract_test config_test
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
@@ -39,6 +42,13 @@ config_ss:
 		echo "the same configuration"; \
 	else \
 		make do_configure_ss && touch ss_config_done; \
+	fi )
+
+config_ssr:
+	( if [ -f ./ssr_config_done ]; then \
+		echo "the same configuration"; \
+	else \
+		make configure_ssr && touch ssr_config_done; \
 	fi )
 
 configure_ssr:
