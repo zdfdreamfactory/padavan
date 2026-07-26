@@ -78,13 +78,13 @@ configure_ssr:
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	echo "Patching CMakeLists.txt to make deps optional..."; \
+	echo "Configuring shadowsocks-libev with CMake..."; \
 	sed -i "s/find_package(PCRE2 REQUIRED)/find_package(PCRE2)/" CMakeLists.txt; \
 	sed -i "s/find_package(MbedTLS REQUIRED)/find_package(MbedTLS)/" CMakeLists.txt; \
 	sed -i "s/find_package(Sodium REQUIRED)/find_package(Sodium)/" CMakeLists.txt; \
 	sed -i "s/find_package(Cares REQUIRED)/find_package(Cares)/" CMakeLists.txt; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	cmake -G "Unix Makefiles" . \
+	$(CMAKE_COMMAND) -G "Unix Makefiles" . \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
@@ -95,6 +95,10 @@ do_configure_ss:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_SKIP_RPATH=TRUE \
+		-DMBEDTLS_INCLUDE_DIRS=$(STAGEDIR)/include \
+		-DMBEDTLS_LIBRARY=$(STAGEDIR)/lib/libmbedtls.so \
+		-DMBEDX509_LIBRARY=$(STAGEDIR)/lib/libmbedx509.so \
+		-DMBEDCRYPTO_LIBRARY=$(STAGEDIR)/lib/libmbedcrypto.so \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
 		-DWITH_EVPORT=OFF \
@@ -111,6 +115,7 @@ do_configure_ss:
 		exit 1; \
 	fi; \
 	)
+
 
 
 
