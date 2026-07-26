@@ -68,7 +68,9 @@ configure_ssr:
 
 configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	aclocal -I m4; autoreconf -fi; automake -a --copy; \
+	if [ -f configure.ac ] && [ ! -f configure ]; then \
+		aclocal -I m4; autoreconf -fi; automake -a --copy; \
+	fi; \
 	ac_cv_prog_PCRE_CONFIG="$(STAGEDIR)/bin/pcre-config" \
 	./configure \
 		--prefix=/usr \
@@ -115,3 +117,4 @@ endif
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SSSERVER),y)
 	$(ROMFSINST) -p +x $(THISDIR)/$(SRC_SS_NAME)/src/ss-server /usr/bin/ss-server
 endif
+
