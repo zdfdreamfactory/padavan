@@ -78,43 +78,27 @@ configure_ssr:
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
 do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	echo "Configuring shadowsocks-libev with CMake..."; \
-	sed -i "s/find_package(PCRE2 REQUIRED)/find_package(PCRE2)/" CMakeLists.txt; \
-	sed -i "s/find_package(MbedTLS REQUIRED)/find_package(MbedTLS)/" CMakeLists.txt; \
-	sed -i "s/find_package(Sodium REQUIRED)/find_package(Sodium)/" CMakeLists.txt; \
-	sed -i "s/find_package(Cares REQUIRED)/find_package(Cares)/" CMakeLists.txt; \
-	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	cmake -G "Unix Makefiles" . \
-		-DCMAKE_SYSTEM_NAME=Linux \
-		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
-		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
-		-DCMAKE_CXX_COMPILER=$(CROSS_COMPILE)g++ \
-		-DCMAKE_AR=$(CROSS_COMPILE)ar \
-		-DCMAKE_NM=$(CROSS_COMPILE)nm \
-		-DCMAKE_RANLIB=$(CROSS_COMPILE)ranlib \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_SKIP_RPATH=TRUE \
-		-DMBEDTLS_INCLUDE_DIRS=$(STAGEDIR)/include \
-		-DMBEDTLS_LIBRARY=$(STAGEDIR)/lib/libmbedtls.so \
-		-DMBEDX509_LIBRARY=$(STAGEDIR)/lib/libmbedx509.so \
-		-DMBEDCRYPTO_LIBRARY=$(STAGEDIR)/lib/libmbedcrypto.so \
-		-DWITH_MBEDTLS=ON \
-		-DWITH_SODIUM=OFF \
-		-DWITH_EVPORT=OFF \
-		-DEMBEDDED_SRC=ON \
-		-DENABLE_NAT=ON \
-		-DENABLE_MANPAGE=OFF \
-		-DBUILD_TESTING=OFF \
-		-DWITH_USR=OFF \
+	echo "Configuring shadowsocks-libev with autotools (3.3.5)..."; \
+	rm -f config.cache ; rm -rf autom4te.cache config.status config.h.in config.h Makefile ; \
+	test -f configure || ./autogen.sh ; \
+	./configure \
+		--build=$(GNU_HOST_NAME) \
+		--host=$(GNU_TARGET_NAME) \
+		--target=mipsel-linux-musl \
+		--prefix=$(STAGEDIR) \
+		--with-mbedtls=$(STAGEDIR) \
+		--disable-documentation \
+		--enable-shared=yes \
+		--enable-static=yes \
 		2>&1 | tee ../config.log; \
-	if [ ! -f CMakeCache.txt ]; then \
-		echo "ERROR: CMake configuration failed!"; \
-		echo "=== Last 50 lines of config log ==="; \
-		tail -50 ../config.log; \
+	if [ ! -f Makefile ]; then \
+		echo "ERROR: Configure failed!"; \
+		echo "=== Last 30 lines of config log ==="; \
+		tail -30 ../config.log; \
 		exit 1; \
 	fi; \
 	)
+
 
 
 
