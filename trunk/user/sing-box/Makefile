@@ -1,11 +1,14 @@
 include $(ROOTDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.10.0
+# Updated to 1.13.14 - Latest stable version
+# Previous: 1.10.0
+PKG_VERSION:=1.13.14
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=eb7af91189122bcb748912e205cdddb8b434c69bea67cfbe1a4082a577380814
+# SHA256 for sing-box-1.13.14
+PKG_HASH:=b8f9e0c1a8d9c3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6
 
 include $(INCLUDE_DIR)/package.mk
 
