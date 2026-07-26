@@ -84,7 +84,7 @@ do_configure_ss:
 	sed -i "s/find_package(Sodium REQUIRED)/find_package(Sodium)/" CMakeLists.txt; \
 	sed -i "s/find_package(Cares REQUIRED)/find_package(Cares)/" CMakeLists.txt; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	$(CMAKE_COMMAND) -G "Unix Makefiles" . \
+	cmake -G "Unix Makefiles" . \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
