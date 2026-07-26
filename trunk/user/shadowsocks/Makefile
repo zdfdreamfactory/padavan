@@ -68,6 +68,7 @@ configure_ssr:
 
 configure_ss:
 	( cd $(SRC_SS_NAME) ; \
+	aclocal -I m4; autoreconf -fi; automake -a --copy; \
 	ac_cv_prog_PCRE_CONFIG="$(STAGEDIR)/bin/pcre-config" \
 	./configure \
 		--prefix=/usr \
