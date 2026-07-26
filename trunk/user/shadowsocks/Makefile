@@ -74,7 +74,7 @@ do_configure_ss:
 	echo "Configuring shadowsocks-libev-3.3.6 with CMake..."; \
 	mkdir -p $(BUILD_SS_DIR) ; \
 	cd $(BUILD_SS_DIR) ; \
-	cmake ../$(SRC_SS_NAME) \
+	cmake -S ../$(SRC_SS_NAME)/$(SRC_SS_NAME) \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_BUILD_TYPE=Release \
