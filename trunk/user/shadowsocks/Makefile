@@ -7,6 +7,10 @@ SRC_SSR_NAME=shadowsocksr-libev-master
 ARCHIVE_SSR_NAME=shadowsocksr-libev-master-e2373d7
 #https://github.com/shadowsocksr-backup/shadowsocksr-libev.git
 
+# Build directories
+BUILD_SS_DIR=$(SRC_SS_NAME)/build
+BUILD_SSR_DIR=$(SRC_SSR_NAME)/build
+
 
 all: extract_test config_test
 ifeq ($(CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS),y)
@@ -68,24 +72,23 @@ configure_ssr:
 
 configure_ss:
 	( cd $(SRC_SS_NAME) ; \
-	if [ ! -f configure ]; then \
-		echo "Generating configure script..."; \
-		aclocal -I m4 2>/dev/null || true; \
-		autoreconf -fi 2>/dev/null || true; \
-	fi; \
-	if [ ! -f configure ]; then \
-		echo "ERROR: configure script generation failed. Checking for m4 files..."; \
-		ls -la m4/ 2>/dev/null || echo "m4 directory not found"; \
+	echo "Configuring shadowsocks-libev-3.3.6 with CMake..."; \
+	mkdir -p $(BUILD_SS_DIR) ; \
+	cd $(BUILD_SS_DIR) ; \
+	cmake .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_TOOLCHAIN_FILE=$(CONFIG_CMAKE_TOOLCHAIN_FILE) \
+		-DWITH_DOC_MAN=OFF \
+		-DBUILD_TESTING=OFF \
+		-DWITH_EMBEDDED_SRC=ON \
+		-DENABLE_CONNMARKTOS=OFF \
+		-DENABLE_NFTABLES=OFF \
+		2>&1 | grep -E "^(--|  |ERROR|WARNING)" || true ; \
+	if [ ! -f CMakeCache.txt ]; then \
+		echo "ERROR: CMake configuration failed"; \
 		exit 1; \
 	fi; \
-	ac_cv_prog_PCRE_CONFIG="$(STAGEDIR)/bin/pcre-config" \
-	./configure \
-		--prefix=/usr \
-		--disable-documentation \
-		--disable-ssp \
-		--disable-assert \
-		--host=$(HOST_TARGET) \
-		--build=$(HOST_BUILD) ; \
 	)
 
 clean: clean_ssr clean_ss
@@ -97,7 +100,9 @@ clean_ssr:
 	fi )
 
 clean_ss:
-	( if [ -f $(SRC_SS_NAME)/Makefile ] ; then \
+	( if [ -d $(BUILD_SS_DIR) ]; then \
+		rm -rf $(BUILD_SS_DIR) ; \
+	elif [ -f $(SRC_SS_NAME)/Makefile ]; then \
 		$(MAKE) -C $(SRC_SS_NAME) distclean ; \
 	fi )
 	
