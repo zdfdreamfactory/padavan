@@ -29,8 +29,8 @@ extract_ssr_test:
 extract_ss_test:
 	( if [ ! -d $(SRC_SS_NAME) ]; then \
 		if [ ! -f $(SRC_SS_NAME).tar.gz ]; then \
-			echo "Downloading shadowsocks-libev-3.3.6 source..."; \
-			curl -sL --connect-timeout 30 -O https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.6/shadowsocks-libev-3.3.6.tar.gz || true; \
+			echo "Downloading shadowsocks-libev-3.3.5 source..."; \
+			curl -sL --connect-timeout 30 -O https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.6/shadowsocks-libev-3.3.5.tar.gz || true; \
 		fi; \
 		tar xzf $(SRC_SS_NAME).tar.gz ; \
 	fi )
@@ -72,7 +72,7 @@ configure_ssr:
 
 # Shadowsocks-libev 3.3.6 uses CMake (not autotools).
 # Key changes from original:
-#   1. cmake -S . -B build — build in-source-relative (from SRC_SS_NAME dir), explicit source=.
+#   1. autotools ./configure -B build — build in-source-relative (from SRC_SS_NAME dir), explicit source=.
 #   2. No CMAKE_PREFIX_PATH or CMAKE_FIND_ROOT_PATH on CLI — let toolchain file handle via env vars
 #   3. Explicitly set cross compiler paths to bypass any root-path mapping issues
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
