@@ -91,6 +91,10 @@ do_configure_ss:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_SKIP_RPATH=TRUE \
+		-DMBEDTLS_INCLUDE_DIRS=$(STAGEDIR)/include \
+		-DMBEDTLS_LIBRARY=$(STAGEDIR)/lib/libmbedtls.so \
+		-DMBEDX509_LIBRARY=$(STAGEDIR)/lib/libmbedx509.so \
+		-DMBEDCRYPTO_LIBRARY=$(STAGEDIR)/lib/libmbedcrypto.so \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
 		-DWITH_EVPORT=OFF \
