@@ -80,8 +80,6 @@ configure_ssr:
 	( cd $(SRC_SS_NAME) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	sed -i "s|        /usr/lib|        /usr/lib\n        $(STAGEDIR)/lib|" cmake/FindMbedTLS.cmake; \
-	sed -i "s|        /usr/include|        /usr/include\n        $(STAGEDIR)/include|" cmake/FindMbedTLS.cmake; \
 	cmake -G "Unix Makefiles" . \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
@@ -93,6 +91,9 @@ configure_ssr:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_SKIP_RPATH=TRUE \
+		-DMBEDTLS_INCLUDE_DIR=$(STAGEDIR)/include \
+		-DMBEDTLS_CRYPTO_LIBRARY=$(STAGEDIR)/lib/libmbedcrypto.so.14 \
+		-DMBEDTLS_TLS_LIBRARY=$(STAGEDIR)/lib/libmbedtls.so.14 \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
 		-DWITH_EVPORT=OFF \
