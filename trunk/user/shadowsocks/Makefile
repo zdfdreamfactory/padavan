@@ -76,11 +76,18 @@ configure_ssr:
 #   2. No CMAKE_PREFIX_PATH or CMAKE_FIND_ROOT_PATH on CLI — let toolchain file handle via env vars
 #   3. Explicitly set cross compiler paths to bypass any root-path mapping issues
 #   4. WITH_EMBEDDED_SRC=OFF to prevent embedded dep build failures in cross-compilation
-do_configure_ss:
+	do_configure_ss:
 	( cd $(SRC_SS_NAME) ; \
 	echo "Configuring shadowsocks-libev with CMake..."; \
 	rm -f CMakeCache.txt ; rm -rf CMakeFiles/ ; \
-	cmake -G "Unix Makefiles" . \
+	mkdir -p src/lib/mbedtls_cmake; \
+	cp -f $(STAGEDIR)/lib/libmbedcrypto.so* src/lib/mbedtls_cmake/ 2>/dev/null || true; \
+	cp -f $(STAGEDIR)/lib/libmbedtls.so* src/lib/mbedtls_cmake/ 2>/dev/null || true; \
+	cp -f $(STAGEDIR)/lib/libmbedx509.so* src/lib/mbedtls_cmake/ 2>/dev/null || true; \
+	LD_LIBRARY_PATH=$(STAGEDIR)/lib cmake -G "Unix Makefiles" . \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=NEVER \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=NEVER \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
 		-DCMAKE_SYSTEM_NAME=Linux \
 		-DCMAKE_SYSTEM_PROCESSOR=mipsel \
 		-DCMAKE_C_COMPILER=$(CROSS_COMPILE)gcc \
@@ -91,10 +98,6 @@ do_configure_ss:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_SKIP_RPATH=TRUE \
-		-DMBEDTLS_INCLUDE_DIRS=$(STAGEDIR)/include \
-		-DMBEDTLS_LIBRARY=$(STAGEDIR)/lib/libmbedtls.so \
-		-DMBEDX509_LIBRARY=$(STAGEDIR)/lib/libmbedx509.so \
-		-DMBEDCRYPTO_LIBRARY=$(STAGEDIR)/lib/libmbedcrypto.so \
 		-DWITH_MBEDTLS=ON \
 		-DWITH_SODIUM=OFF \
 		-DWITH_EVPORT=OFF \
